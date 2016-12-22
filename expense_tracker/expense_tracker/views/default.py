@@ -3,14 +3,15 @@ from ..models import Expense
 
 
 @view_config(route_name="list",
-    renderer="../templates/list.jinja2")
+             renderer="../templates/list.jinja2")
 def list_view(request):
     """A listing of expenses for the home page."""
-    query = request.dbsession.query(Expense).all()
-    return {"expenses": query}
+    expenses = request.dbsession.query(Expense).all()
+    return {"expenses": expenses}
+
 
 @view_config(route_name="detail",
-    renderer="../templates/detail.jinja2")
+             renderer="../templates/detail.jinja2")
 def detail_view(request):
     """The detail page for an expense."""
     the_id = int(request.matchdict["id"])
