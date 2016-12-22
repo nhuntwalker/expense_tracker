@@ -1,6 +1,9 @@
 import os
 import sys
 import transaction
+import datetime
+import faker
+import random
 
 from pyramid.paster import (
     get_appsettings,
@@ -15,7 +18,7 @@ from ..models import (
     get_session_factory,
     get_tm_session,
     )
-from ..models import MyModel
+from ..models import Expense
 
 
 def usage(argv):
@@ -34,12 +37,48 @@ def main(argv=sys.argv):
     settings = get_appsettings(config_uri, options=options)
 
     engine = get_engine(settings)
+
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
     session_factory = get_session_factory(engine)
 
+    fake = faker.Faker()
+
+    categories = [
+        "rent",
+        "utilities",
+        "groceries",
+        "food",
+        "diapers",
+        "car loan",
+        "netflix",
+        "booze",
+        "therapist"
+    ]
+
+    expenses = [Expense(
+            item=fake.company(),
+            amount=random.random() * random.randint(0, 1000),
+            paid_to=fake.name(),
+            category=random.choice(categories),
+            date=datetime.datetime.now(),
+            description="",
+        ) for i in range(100)]
+
     with transaction.manager:
         dbsession = get_tm_session(session_factory, transaction.manager)
 
-        model = MyModel(name='one', value=1)
-        dbsession.add(model)
+        dbsession.add_all(expenses)
+
+
+
+
+
+
+
+
+
+
+
+
