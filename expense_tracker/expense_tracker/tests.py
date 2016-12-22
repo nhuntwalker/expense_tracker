@@ -1,65 +1,106 @@
-# import unittest
-# import transaction
+import pytest
+import transaction
 
-# from pyramid import testing
+from pyramid import testing
 
+from .models import (
+    Expense,
+    get_engine,
+    get_session_factory,
+    get_tm_session,
+)
+from .models.meta import Base
 
-# def dummy_request(dbsession):
-#     return testing.DummyRequest(dbsession=dbsession)
-
-
-# class BaseTest(unittest.TestCase):
-#     def setUp(self):
-#         self.config = testing.setUp(settings={
-#             'sqlalchemy.url': 'sqlite:///:memory:'
-#         })
-#         self.config.include('.models')
-#         settings = self.config.get_settings()
-
-#         from .models import (
-#             get_engine,
-#             get_session_factory,
-#             get_tm_session,
-#             )
-
-#         self.engine = get_engine(settings)
-#         session_factory = get_session_factory(self.engine)
-
-#         self.session = get_tm_session(session_factory, transaction.manager)
-
-#     def init_database(self):
-#         from .models.meta import Base
-#         Base.metadata.create_all(self.engine)
-
-#     def tearDown(self):
-#         from .models.meta import Base
-
-#         testing.tearDown()
-#         transaction.abort()
-#         Base.metadata.drop_all(self.engine)
+import faker
+import random
+import datetime
 
 
-# class TestMyViewSuccessCondition(BaseTest):
+# set up a SQL DB for the entire testing session.
+@pytest.fixture(scope="session")
+def sqlengine(request):
+    config = testing.setUp(settings={
+        'sqlalchemy.url': 'sqlite:///:memory:'
+    })
+    config.include(".models")
+    settings = config.get_settings()
+    engine = get_engine(settings)
+    Base.metadata.create_all(engine)
 
-#     def setUp(self):
-#         super(TestMyViewSuccessCondition, self).setUp()
-#         self.init_database()
+    def teardown():
+        testing.tearDown()
+        transaction.abort()
+        Base.metadata.drop_all(engine)
 
-#         from .models import MyModel
-
-#         model = MyModel(name='one', value=55)
-#         self.session.add(model)
-
-#     def test_passing_view(self):
-#         from .views.default import my_view
-#         info = my_view(dummy_request(self.session))
-#         self.assertEqual(info['one'].name, 'one')
-#         self.assertEqual(info['project'], 'expense_tracker')
+    request.addfinalizer(teardown)
+    return engine
 
 
-# class TestMyViewFailureCondition(BaseTest):
+@pytest.fixture(scope="function")
+def new_session(sqlengine, request):
+    session_factory = get_session_factory(sqlengine)
+    session = get_tm_session(session_factory, transaction.manager)
 
-#     def test_failing_view(self):
-#         from .views.default import my_view
-#         info = my_view(dummy_request(self.session))
-#         self.assertEqual(info.status_int, 500)
+    def teardown():
+        transaction.abort()
+
+    request.addfinalizer(teardown)
+    return session
+
+fake = faker.Faker()
+
+CATEGORIES = [
+    "rent",
+    "utilities",
+    "groceries",
+    "food",
+    "diapers",
+    "car loan",
+    "netflix",
+    "booze",
+    "therapist"
+]
+EXPENSES = [Expense(
+    item=fake.company(),
+    amount=random.random() * random.randint(0, 1000),
+    paid_to=fake.name(),
+    category=random.choice(CATEGORIES),
+    date=datetime.datetime.now(),
+    description=fake.text(100),
+) for i in range(100)]
+
+
+@pytest.fixture
+def http_request(new_session):
+    the_request = testing.DummyRequest()
+    the_request.dbsession = new_session
+    return the_request
+
+
+def test_new_expenses_are_added(new_session):
+    """New expenses get added to the database."""
+
+    query = new_session.query(Expense).all()
+    assert len(query) == len(EXPENSES)
+
+
+def test_list_view_returns_empty_when_empty(http_request):
+    from .views.default import list_view
+    result = list_view(http_request)
+    assert len(result["expenses"]) == 0
+
+
+# @pytest.fixture
+# def testapp():
+#     from webtest import TestApp
+#     from expense_tracker import main
+
+#     app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
+#     return TestApp(app)
+
+
+# def test_home_route_has_table(testapp):
+#     """The home page has a table."""
+#     response = testapp.get('/', status=200)
+#     html = response.html
+#     assert len(html.find_all("table")) == 1
