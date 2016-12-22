@@ -1,3 +1,6 @@
+"""A short testing suite for the expense tracker."""
+
+
 import pytest
 import transaction
 
@@ -13,6 +16,15 @@ import datetime
 
 @pytest.fixture(scope="session")
 def configuration(request):
+    """Set up a Configurator instance.
+
+    This Configurator instance sets up a pointer to the location of the
+        database.
+    It also includes the models from your app's model package.
+    Finally it tears everything down, including the in-memory SQLite database.
+
+    This configuration will persist for the entire duration of your PyTest run.
+    """
     settings = {'sqlalchemy.url': 'sqlite:///:memory:'}
     config = testing.setUp(settings=settings)
     config.include('.models')
@@ -26,6 +38,12 @@ def configuration(request):
 
 @pytest.fixture()
 def db_session(configuration, request):
+    """Create a session for interacting with the test database.
+
+    This uses the dbsession_factory on the configurator instance to create a
+    new database session. It binds that session to the available engine
+    and returns a new session for every call of the dummy_request object.
+    """
     SessionFactory = configuration.registry['dbsession_factory']
     session = SessionFactory()
     engine = session.bind
@@ -50,7 +68,6 @@ def add_models(dummy_request):
 fake = faker.Faker()
 
 CATEGORIES = [
-
     "rent",
     "utilities",
     "groceries",
@@ -61,6 +78,7 @@ CATEGORIES = [
     "booze",
     "therapist"
 ]
+
 EXPENSES = [Expense(
     item=fake.company(),
     amount=random.random() * random.randint(0, 1000),
@@ -130,4 +148,3 @@ def test_home_route_has_table2(testapp):
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 1
-
