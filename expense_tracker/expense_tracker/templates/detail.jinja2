@@ -1,0 +1,18 @@
+{% extends "layout.jinja2" %}
+
+{% block title %}{{ expense.item }}{% endblock %}
+
+{% block body %}
+<h1>{{ expense.item }}</h1>
+
+<p>
+    ${{ expense.amount | round(2) }} {{ expense.description }}
+</p>
+
+<p>
+    {{ expense.date.strftime('%b %d, %Y') }} | {{ expense.category }}
+</p>
+
+<p><a href="{{ request.route_url('edit', id=expense.id) }}">Edit</a></p>
+
+{% endblock %}
