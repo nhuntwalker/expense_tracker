@@ -11,13 +11,17 @@ import random
 import datetime
 
 
-@pytest.yield_fixture(scope="session")
-def configuration():
+@pytest.fixture(scope="session")
+def configuration(request):
     settings = {'sqlalchemy.url': 'sqlite:///:memory:'}
     config = testing.setUp(settings=settings)
     config.include('.models')
-    yield config
-    testing.tearDown()
+
+    def teardown():
+        testing.tearDown()
+
+    request.addfinalizer(teardown)
+    return config
 
 
 @pytest.fixture()
