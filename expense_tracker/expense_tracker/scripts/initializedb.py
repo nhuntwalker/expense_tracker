@@ -63,7 +63,7 @@ def main(argv=sys.argv):
             paid_to=fake.name(),
             category=random.choice(categories),
             date=datetime.datetime.now(),
-            description="",
+            description=fake.text(100),
         ) for i in range(100)]
 
     with transaction.manager:

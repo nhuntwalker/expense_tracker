@@ -8,3 +8,11 @@ def list_view(request):
     """A listing of expenses for the home page."""
     query = request.dbsession.query(Expense).all()
     return {"expenses": query}
+
+@view_config(route_name="detail",
+    renderer="../templates/detail.jinja2")
+def detail_view(request):
+    """The detail page for an expense."""
+    the_id = int(request.matchdict["id"])
+    expense = request.dbsession.query(Expense).get(the_id)
+    return {"expense": expense}
