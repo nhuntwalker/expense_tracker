@@ -25,7 +25,8 @@ def configuration(request):
 
     This configuration will persist for the entire duration of your PyTest run.
     """
-    settings = {'sqlalchemy.url': 'sqlite:///:memory:'}
+    settings = {
+        'sqlalchemy.url': 'sqlite:///:memory:'}  # points to an in-memory database.
     config = testing.setUp(settings=settings)
     config.include('.models')
 
@@ -58,15 +59,26 @@ def db_session(configuration, request):
 
 @pytest.fixture
 def dummy_request(db_session):
+    """Instantiate a fake HTTP Request, complete with a database session.
+
+    This is a function-level fixture, so every new request will have a
+    new database session.
+    """
     return testing.DummyRequest(dbsession=db_session)
 
 
 @pytest.fixture
 def add_models(dummy_request):
+    """Add a bunch of model instances to the database.
+
+    Every test that includes this fixture will add new random expenses.
+    """
     dummy_request.dbsession.add_all(EXPENSES)
 
-fake = faker.Faker()
+# instantiate a Faker object for producing fake names, companies, and text.
+FAKE = faker.Faker()
 
+# create a list of categories with which I can organize my expenses.
 CATEGORIES = [
     "rent",
     "utilities",
@@ -79,13 +91,16 @@ CATEGORIES = [
     "therapist"
 ]
 
+# create a bunch of Expense model instances with randomized attributes and
+# put them into a list that is globally available.
+# this could also just be made into a fixture.
 EXPENSES = [Expense(
-    item=fake.company(),
+    item=FAKE.company(),
     amount=random.random() * random.randint(0, 1000),
-    paid_to=fake.name(),
+    paid_to=FAKE.name(),
     category=random.choice(CATEGORIES),
     date=datetime.datetime.now(),
-    description=fake.text(100),
+    description=FAKE.text(100),
 ) for i in range(100)]
 
 
@@ -98,7 +113,15 @@ def test_new_expenses_are_added(db_session):
     assert len(query) == len(EXPENSES)
 
 
-def test_list_view_returns_empty_when_empty(dummy_request, add_models):
+def test_list_view_returns_empty_when_empty(dummy_request):
+    """Test that the list view returns no objects in the expenses iterable."""
+    from .views.default import list_view
+    result = list_view(dummy_request)
+    assert len(result["expenses"]) == 0
+
+
+def test_list_view_returns_objects_when_exist(dummy_request, add_models):
+    """Test that the list view does return objects when the DB is populated."""
     from .views.default import list_view
     result = list_view(dummy_request)
     assert len(result["expenses"]) == 100
@@ -108,6 +131,17 @@ def test_list_view_returns_empty_when_empty(dummy_request, add_models):
 
 @pytest.fixture
 def testapp():
+    """Create an instance of webtests TestApp for testing routes.
+
+    With the alchemy scaffold we need to add to our test application the
+    setting for a database to be used for the models.
+    We have to then set up the database by starting a database session.
+    Finally we have to create all of the necessary tables that our app
+    normally uses to function.
+
+    The scope of the fixture is function-level, so every test will get a new
+    test application.
+    """
     from webtest import TestApp
     from expense_tracker import main
 
@@ -123,6 +157,11 @@ def testapp():
 
 @pytest.fixture
 def fill_the_db(testapp):
+    """Fill the database with some model instances.
+
+    Start a database session with the transaction manager and add all of the
+    expenses. This will be done anew for every test.
+    """
     SessionFactory = testapp.app.registry["dbsession_factory"]
     with transaction.manager:
         dbsession = get_tm_session(SessionFactory, transaction.manager)
@@ -130,21 +169,21 @@ def fill_the_db(testapp):
 
 
 def test_home_route_has_table(testapp):
-    """The home page has a table."""
+    """The home page has a table in the html."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("table")) == 1
 
 
 def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
-    """When there's data in the database, the home page has rows."""
+    """When there's data in the database, the home page has some rows."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 101
 
 
 def test_home_route_has_table2(testapp):
-    """The home page has a table with no rows."""
+    """Without data the home page only has the header row in its table."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 1
