@@ -1,0 +1,33 @@
+{% extends "layout.jinja2" %}
+
+{% block title %}New Expense{% endblock %}
+
+{% block body %}
+<h1>Add a New Expense</h1>
+<form method="POST">
+    <p>
+        <label for="item">Expense Name: </label>
+        <input type="text" name="item" />
+    </p>
+    <p>
+        <label for="amount">Amount Paid: </label>
+        <input type="number" name="amount" />
+    </p>
+    <p>
+        <label for="paid_to">Paid To:</label>
+        <input type="text" name="paid_to" />
+    </p>
+    <p>
+        <label for="category">Category: </label>
+        <input type="text" name="category" />
+    </p>
+    <p>
+        <label for="description">Description: </label>
+        <textarea name="description"></textarea>
+    </p>
+    <p>
+        <input type="submit" name="Add Expense" />
+    </p>
+</form>
+
+{% endblock %}

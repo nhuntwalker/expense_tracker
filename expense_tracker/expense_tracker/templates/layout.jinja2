@@ -2,12 +2,13 @@
 <html>
 <head>
   <title>{% block title %}Expense App{% endblock %}</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script><script type="text/javascript"></script>
 </head>
 <body>
   <nav>
     <ul>
-      <li><a href="">Expenses</a></li>
-      <li><a href="">New Expense</a></li>
+      <li><a href="{{ request.route_url('list') }}">Expenses</a></li>
+      <li><a href="{{ request.route_url('create') }}">New Expense</a></li>
     </ul>
   </nav>
   {% block body %}

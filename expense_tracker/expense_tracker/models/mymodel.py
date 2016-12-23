@@ -21,14 +21,15 @@ class Expense(Base):
     date = Column(Date)
     description = Column(Unicode)
 
+    def to_json(self):
+        jsonify = {
+            "id": self.id,
+            "item": self.item,
+            "amount": self.amount,
+            "paid_to": self.paid_to,
+            "category": self.category,
+            "date": self.date.strftime("%b %d, %Y"),
+            "description": self.description,
+        }
+        return jsonify
 
-
-
-# class MyModel(Base):
-#     __tablename__ = 'models'
-#     id = Column(Integer, primary_key=True)
-#     name = Column(Text)
-#     value = Column(Integer)
-
-
-# Index('my_index', MyModel.name, unique=True, mysql_length=255)

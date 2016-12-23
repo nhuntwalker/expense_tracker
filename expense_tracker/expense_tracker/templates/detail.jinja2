@@ -4,7 +4,7 @@
 
 {% block body %}
 <h1>{{ expense.item }}</h1>
-
+<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 <p>
     ${{ expense.amount | round(2) }} {{ expense.description }}
 </p>
