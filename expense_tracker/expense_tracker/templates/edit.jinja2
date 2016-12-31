@@ -1,0 +1,33 @@
+{% extends "layout.jinja2" %}
+
+{% block title %}Edit Expense{% endblock %}
+
+{% block body %}
+<h1>Edit the Expense</h1>
+<form method="POST">
+    <p>
+        <label for="item">Expense Name: </label>
+        <input type="text" name="item" value="{{data.item}}"/>
+    </p>
+    <p>
+        <label for="amount">Amount Paid: </label>
+        <input type="number" name="amount" value="{{ '%0.2f' | format(data.amount) }}" step="0.01" />
+    </p>
+    <p>
+        <label for="paid_to">Paid To:</label>
+        <input type="text" name="paid_to" value="{{ data.paid_to }}"/>
+    </p>
+    <p>
+        <label for="category">Category: </label>
+        <input type="text" name="category" value="{{ data.category }}"/>
+    </p>
+    <p>
+        <label for="description">Description: </label>
+        <textarea name="description">{{ data.description }}</textarea>
+    </p>
+    <p>
+        <input type="submit" name="Edit Expense" />
+    </p>
+</form>
+
+{% endblock %}
