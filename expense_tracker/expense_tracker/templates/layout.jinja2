@@ -10,7 +10,12 @@
   <nav>
     <ul>
       <li><a href="{{ request.route_url('list') }}">Expenses</a></li>
-      <li><a href="{{ request.route_url('create') }}">New Expense</a></li>
+      {% if request.authenticated_userid %}
+        <li><a href="{{ request.route_url('create') }}">New Expense</a></li>
+        <li><a href="{{ request.route_url('logout') }}">Log Out</a></li>
+      {% else %}
+        <li><a href="{{ request.route_url('login') }}">Log In</a></li>
+      {% endif %}
     </ul>
   </nav>
   {% block body %}
