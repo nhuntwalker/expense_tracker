@@ -156,6 +156,16 @@ def testapp():
 
 
 @pytest.fixture
+def set_auth_credentials():
+    """Make a username/password combo for testing."""
+    import os
+    from passlib.apps import custom_app_context as pwd_context
+
+    os.environ["AUTH_USERNAME"] = "testme"
+    os.environ["AUTH_PASSWORD"] = pwd_context.hash("foobar")
+
+
+@pytest.fixture
 def fill_the_db(testapp):
     """Fill the database with some model instances.
 
@@ -187,3 +197,21 @@ def test_home_route_has_table2(testapp):
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 1
+
+# ======== TESTING WITH SECURITY ==========
+
+
+def test_create_route_is_forbidden(testapp):
+    """Any old user shouldn't be able to access the create view."""
+    response = testapp.get("/new-expense", status=403)
+    assert response.status_code == 403
+
+
+def test_auth_app_can_see_create_route(set_auth_credentials, testapp):
+    """A logged-in user should be able to access the create view."""
+    response = testapp.post("/login", params={
+        "username": "testme",
+        "password": "foobar"
+    })
+    response = testapp.get("/new-expense")
+    assert response.status_code == 200

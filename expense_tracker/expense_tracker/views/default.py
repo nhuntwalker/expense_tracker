@@ -113,7 +113,9 @@ def category_view(request):
     }
 
 
-@view_config(route_name="login", renderer="../templates/login.jinja2")
+@view_config(route_name="login",
+             renderer="../templates/login.jinja2",
+             require_csrf=False)
 def login_view(request):
     if request.POST:
         username = request.POST["username"]
@@ -134,6 +136,6 @@ def logout_view(request):
     return HTTPFound(request.route_url("list"), headers=auth_head)
 
 
-@forbidden_view_config(renderer="../templates/forbidden.jinja2")
-def not_allowed_view(request):
-    return {}
+# @forbidden_view_config(renderer="../templates/forbidden.jinja2")
+# def not_allowed_view(request):
+#     return {}
