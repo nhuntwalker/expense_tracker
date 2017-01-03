@@ -1,15 +1,20 @@
-$.ajax({
-    url: 'api/list',
-    type: 'POST',
-    data: {
-        item: "Utilities", 
-        amount: 42.02,
-        paid_to: "Seattle Public Light",
-        category: "utilties",
-        description: "I need wifi and power"
-    },
-    success: function(data){
-        console.log(data.expenses);
-    }
+$(document).ready(function(){
+    var deleters = $(".delete");
+    deleters.on("click", function(){
+        // send ajax request to delete this expense
+        $.ajax({
+            url: 'delete/' + $(this).attr("data"),
+            success: function(){
+                console.log("deleted");
+            }
+        });        
+        // fade out expense
+        this_row = $(this.parentNode.parentNode);
+        // delete the containing row
+        this_row.animate({
+            opacity: 0
+        }, 500, function(){
+            $(this).remove();
+        })
+    });
 });
-

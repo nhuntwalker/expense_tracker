@@ -25,7 +25,6 @@ CATEGORIES = [
              renderer="../templates/list.jinja2")
 def list_view(request):
     """A listing of expenses for the home page."""
-
     if request.POST and request.POST["category"]:
         return HTTPFound(request.route_url("category",
                                            cat=request.POST["category"]))
@@ -117,6 +116,7 @@ def category_view(request):
              renderer="../templates/login.jinja2",
              require_csrf=False)
 def login_view(request):
+    """Authenticate the incoming user."""
     if request.POST:
         username = request.POST["username"]
         password = request.POST["password"]
@@ -132,10 +132,20 @@ def login_view(request):
 
 @view_config(route_name="logout")
 def logout_view(request):
+    """Remove authentication from the user."""
     auth_head = forget(request)
     return HTTPFound(request.route_url("list"), headers=auth_head)
 
 
-# @forbidden_view_config(renderer="../templates/forbidden.jinja2")
-# def not_allowed_view(request):
-#     return {}
+@forbidden_view_config(renderer="../templates/forbidden.jinja2")
+def not_allowed_view(request):
+    """Some special stuff for the forbidden view."""
+    return {}
+
+
+@view_config(route_name="delete", permission="delete")
+def delete_view(request):
+    """To delete individual items."""
+    expense = request.dbsession.query(Expense).get(request.matchdict["id"])
+    request.dbsession.delete(expense)
+    return HTTPFound(request.route_url("list"))
