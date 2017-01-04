@@ -22,3 +22,14 @@ class Expense(Base):
     category = Column(Unicode)
     date = Column(Date)
     description = Column(Unicode)
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "item": self.item,
+            "amount": self.amount,
+            "paid_to": self.paid_to,
+            "category": self.category,
+            "date": self.date.strftime("%m %d, %Y"),
+            "description": self.description
+        }

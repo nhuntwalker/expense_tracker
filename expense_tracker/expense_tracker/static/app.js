@@ -4,6 +4,10 @@ $(document).ready(function(){
         // send ajax request to delete this expense
         $.ajax({
             url: 'delete/' + $(this).attr("data"),
+            data: {
+                "item": "some name",
+                "paid_to": "some company"
+            }
             success: function(){
                 console.log("deleted");
             }

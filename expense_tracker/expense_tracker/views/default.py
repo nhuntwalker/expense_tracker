@@ -149,3 +149,10 @@ def delete_view(request):
     expense = request.dbsession.query(Expense).get(request.matchdict["id"])
     request.dbsession.delete(expense)
     return HTTPFound(request.route_url("list"))
+
+
+@view_config(route_name="api_list", renderer="string")
+def api_list_view(request):
+    expenses = request.dbsession.query(Expense).all()
+    output = [item.to_json() for item in expenses]
+    return output

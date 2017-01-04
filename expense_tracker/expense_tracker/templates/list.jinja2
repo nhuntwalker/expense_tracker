@@ -36,7 +36,7 @@
     <td align="right">${{ "%0.2f" | format(expense.amount) }}</td>
     <td>{{ expense.item }}</td>
     <td align="center"><a href="{{ request.route_url('edit', id=expense.id) }}"><i class="fa fa-pencil" aria-hidden="true"></i></a></td>
-    <td align="center"><a href="{{ request.route_url('delete', id=expense.id) }}" class="delete"><i class="fa fa-times" aria-hidden="true"></i></a></td>
+    <td align="center"><a href="#" class="delete" data="{{ expense.id }}"><i class="fa fa-times" aria-hidden="true"></i></a></td>
 </tr>
 {% endfor %}
 
@@ -44,4 +44,6 @@
 
 {% endblock %}
 
-{% block javascript %}{% endblock %}
+{% block javascript %}
+<script type="text/javascript" src="{{ request.static_url('expense_tracker:static/app.js') }}"></script>
+{% endblock %}

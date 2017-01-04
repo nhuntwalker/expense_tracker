@@ -12,3 +12,4 @@ def includeme(config):
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
     config.add_route('delete', '/delete/{id:\d+}') # <-- NEW ROUTE
+    config.add_route('api_list', '/api/expenses') # <-- NEW ROUTE TOO
