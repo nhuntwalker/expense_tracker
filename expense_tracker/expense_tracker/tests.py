@@ -30,7 +30,6 @@ def configuration(request):
     config = testing.setUp(settings=settings)
     config.include('expense_tracker.models')
     config.include('expense_tracker.routes')
-    config.include('expense_tracker.security')
 
     def teardown():
         testing.tearDown()
@@ -104,6 +103,16 @@ EXPENSES = [Expense(
     date=datetime.datetime.now(),
     description=FAKE.text(100),
 ) for i in range(100)]
+
+
+@pytest.fixture
+def set_auth_credentials():
+    """Make a username/password combo for testing."""
+    import os
+    from passlib.apps import custom_app_context as pwd_context
+
+    os.environ["AUTH_USERNAME"] = "testme"
+    os.environ["AUTH_PASSWORD"] = pwd_context.hash("foobar")
 
 
 # ======== UNIT TESTS ==========
@@ -198,10 +207,75 @@ def test_posting_to_edit_view_edits_existing_obj(dummy_request, add_models):
     this_expense = query.get(4)
     assert this_expense.item == "test item"
 
+
+# def test_check_credentials_passes_good_creds(set_auth_credentials):
+#     """Foo."""
+#     from expense_tracker.security import check_credentials
+#     assert check_credentials("testme", "foobar")
+
+
+# def test_check_credentials_fails_bad_pass(set_auth_credentials):
+#     """Foo."""
+#     from expense_tracker.security import check_credentials
+#     assert not check_credentials("testme", "bad pass")
+
+
+# def test_check_credentials_fails_bad_user(set_auth_credentials):
+#     """Foo."""
+#     from expense_tracker.security import check_credentials
+#     assert not check_credentials("bad username", "foobar")
+
+
+# def test_check_credentials_fails_empty_creds(set_auth_credentials):
+#     """Foo."""
+#     from expense_tracker.security import check_credentials
+#     assert not check_credentials("", "")
+
+
+def test_get_login_view_is_empty_dict(dummy_request):
+    """FOO."""
+    from expense_tracker.views.default import login_view
+    assert login_view(dummy_request) == {}
+
+
+# def test_login_view_good_creds_gets_redirect(dummy_request, set_auth_credentials):
+#     """FOO."""
+#     from expense_tracker.views.default import login_view
+#     from pyramid.httpexceptions import HTTPFound
+
+#     dummy_request.method = "POST"
+#     dummy_request.POST["username"] = "testme"
+#     dummy_request.POST["password"] = "foobar"
+
+#     result = login_view(dummy_request)
+#     assert isinstance(result, HTTPFound)
+
+
+# def test_login_view_bad_creds_does_nothing(dummy_request, set_auth_credentials):
+#     """FOO."""
+#     from expense_tracker.views.default import login_view
+
+#     dummy_request.method = "POST"
+#     dummy_request.POST["username"] = "badname"
+#     dummy_request.POST["password"] = "badpass"
+
+#     result = login_view(dummy_request)
+#     assert result == {}
+
+
+def test_api_list_returns_list_of_dicts(dummy_request, add_models):
+    """FOO."""
+    from expense_tracker.views.default import api_list_view
+
+    result = api_list_view(dummy_request)
+    for item in EXPENSES:
+        assert item.to_json() in result
+
+
 # ======== FUNCTIONAL TESTS ===========
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def testapp(request):
     """Create an instance of webtests TestApp for testing routes.
 
@@ -245,16 +319,6 @@ def testapp(request):
 
 
 @pytest.fixture
-def set_auth_credentials():
-    """Make a username/password combo for testing."""
-    import os
-    from passlib.apps import custom_app_context as pwd_context
-
-    os.environ["AUTH_USERNAME"] = "testme"
-    os.environ["AUTH_PASSWORD"] = pwd_context.hash("foobar")
-
-
-@pytest.fixture
 def fill_the_db(testapp):
     """Fill the database with some model instances.
 
@@ -265,6 +329,8 @@ def fill_the_db(testapp):
     with transaction.manager:
         dbsession = get_tm_session(SessionFactory, transaction.manager)
         dbsession.add_all(EXPENSES)
+
+    return dbsession
 
 
 def test_home_route_has_table(testapp):
@@ -281,26 +347,99 @@ def test_home_route_has_table2(testapp):
     assert len(html.find_all("tr")) == 1
 
 
+def test_detail_route_has_no_information(testapp):
+    response = testapp.get("/expense/4", status=404)
+    assert response.status_code == 404
+
+
+def test_category_view_only_shows_one_set_of_items(testapp, fill_the_db):
+    session = fill_the_db
+    response = testapp.get("/expense/utilities")
+    num_items = session.query(Expense).filter_by(category="utilities").count()
+
+    html = response.html
+    rows = html.find_all("tr")
+    assert len(rows) == num_items + 1
+
+
+def test_get_login_shows_input_fields(testapp):
+    response = testapp.get("/login")
+    html = response.html
+    username = html.find("input", {"name": "username"})
+    password = html.find("input", {"name": "password"})
+    assert username and password
+
+# ======= AFTER THIS POINT THERE'S DATA =======
+
+
 def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
     """When there's data in the database, the home page has some rows."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 101
 
+
+def test_detail_route_has_some_information(testapp):
+    response = testapp.get("/expense/4")
+    assert "$" in response.text
+
 # ======== TESTING WITH SECURITY ==========
 
 
 def test_create_route_is_forbidden(testapp):
     """Any old user shouldn't be able to access the create view."""
-    response = testapp.get("/new-expense")
-    assert response.status_code == 200
+    response = testapp.get("/new-expense", status=403)
+    assert response.status_code == 403
 
 
-def test_auth_app_can_see_create_route(set_auth_credentials, testapp):
-    """A logged-in user should be able to access the create view."""
-    response = testapp.post("/login", params={
+def test_app_can_log_in_and_be_authed(set_auth_credentials, testapp):
+    """Foo."""
+    testapp.post("/login", params={
         "username": "testme",
         "password": "foobar"
     })
+    assert "auth_tkt" in testapp.cookies
+
+
+def test_authed_app_can_see_create_route(testapp):
+    """A logged-in user should be able to access the create view."""
     response = testapp.get("/new-expense")
     assert response.status_code == 200
+
+
+def test_authed_app_can_create_new_thing(testapp):
+    """Foo."""
+    response = testapp.get("/new-expense")
+    csrf_token = response.html.find(
+        "input", 
+        {"name": "csrf_token"}).attrs["value"]
+
+    testapp.post("/new-expense", params={
+        "csrf_token": csrf_token,
+        "item": "test item",
+        "amount": "1234.56",
+        "paid_to": "test recipient",
+        "category": "test category",
+        "description": "test description"
+    })
+
+    response = testapp.get("/")
+    assert "test item" in response.text
+
+
+def test_logout_removes_authentication(testapp):
+    """Foo."""
+    testapp.get("/logout")
+    assert "auth_tkt" not in testapp.cookies
+
+
+def test_login_button_now_present_on_homepage(testapp):
+    """FOO."""
+    response = testapp.get("/")
+    assert "Log In" in response.text
+
+
+def test_edit_view_is_forbidden_again(testapp):
+    """Foo."""
+    response = testapp.get("/expense/5/edit", status=403)
+    assert response.status_code == 403

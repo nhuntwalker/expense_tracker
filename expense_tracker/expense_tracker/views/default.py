@@ -143,6 +143,7 @@ def logout_view(request):
 @forbidden_view_config(renderer="../templates/forbidden.jinja2")
 def not_allowed_view(request):
     """Some special stuff for the forbidden view."""
+    request.response.status = 403
     return {}
 
 
