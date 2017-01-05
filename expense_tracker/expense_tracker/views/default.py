@@ -1,9 +1,11 @@
 """The main views for our expense_tracker app."""
 
-from pyramid.view import view_config
-from ..models import Expense
+from pyramid.view import view_config, forbidden_view_config
+from expense_tracker.models import Expense
 from pyramid.httpexceptions import HTTPFound
 import datetime
+from expense_tracker.security import check_credentials
+from pyramid.security import remember, forget  # <--- add this line
 
 
 CATEGORIES = [
@@ -43,7 +45,11 @@ def detail_view(request):
     return {"expense": expense}
 
 
-@view_config(route_name="create", renderer="../templates/add.jinja2")
+@view_config(
+    route_name="create",
+    renderer="../templates/add.jinja2",
+    permission="add"
+)
 def create_view(request):
     """Create a new expense."""
     if request.POST:
@@ -61,7 +67,11 @@ def create_view(request):
     return {}
 
 
-@view_config(route_name="edit", renderer="../templates/edit.jinja2")
+@view_config(
+    route_name="edit",
+    renderer="../templates/edit.jinja2",
+    permission="add"
+)
 def edit_view(request):
     """Edit an existing expense."""
     the_id = int(request.matchdict["id"])
@@ -100,3 +110,49 @@ def category_view(request):
         "categories": CATEGORIES,
         "selected": the_category
     }
+
+
+@view_config(route_name="login",
+             renderer="../templates/login.jinja2",
+             require_csrf=False)
+def login_view(request):
+    """Authenticate the incoming user."""
+    if request.POST:
+        username = request.POST["username"]
+        password = request.POST["password"]
+        if check_credentials(username, password):
+            auth_head = remember(request, username)
+            return HTTPFound(
+                request.route_url("list"),
+                headers=auth_head
+            )
+
+    return {}
+
+
+@view_config(route_name="logout")
+def logout_view(request):
+    """Remove authentication from the user."""
+    auth_head = forget(request)
+    return HTTPFound(request.route_url("list"), headers=auth_head)
+
+
+@forbidden_view_config(renderer="../templates/forbidden.jinja2")
+def not_allowed_view(request):
+    """Some special stuff for the forbidden view."""
+    return {}
+
+
+@view_config(route_name="delete", permission="delete")
+def delete_view(request):
+    """To delete individual items."""
+    expense = request.dbsession.query(Expense).get(request.matchdict["id"])
+    request.dbsession.delete(expense)
+    return HTTPFound(request.route_url("list"))
+
+
+@view_config(route_name="api_list", renderer="string")
+def api_list_view(request):
+    expenses = request.dbsession.query(Expense).all()
+    output = [item.to_json() for item in expenses]
+    return output
