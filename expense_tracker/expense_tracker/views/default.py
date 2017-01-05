@@ -55,7 +55,7 @@ def detail_view(request):
 )
 def create_view(request):
     """Create a new expense."""
-    if request.POST:
+    if request.POST and request.method == "POST":
         expense = Expense(
             item=request.POST["item"],
             amount=float(request.POST["amount"]),

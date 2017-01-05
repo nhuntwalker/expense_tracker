@@ -29,6 +29,8 @@ def configuration(request):
         'sqlalchemy.url': 'postgres:///test_expenses'}
     config = testing.setUp(settings=settings)
     config.include('expense_tracker.models')
+    config.include('expense_tracker.routes')
+    config.include('expense_tracker.security')
 
     def teardown():
         testing.tearDown()
@@ -153,6 +155,10 @@ def test_create_view_returns_empty_dict(dummy_request):
 def test_posting_to_create_view_adds_new_obj(dummy_request):
     """When I post to the create view I get a new expense."""
     from expense_tracker.views.default import create_view
+
+    query = dummy_request.dbsession.query(Expense)
+    count = query.count()
+
     dummy_request.method = "POST"
     dummy_request.POST["item"] = "test item"
     dummy_request.POST["amount"] = "1234.56"
@@ -161,9 +167,36 @@ def test_posting_to_create_view_adds_new_obj(dummy_request):
     dummy_request.POST["description"] = "test description"
     create_view(dummy_request)
 
+    new_count = query.count()
+    assert new_count == count + 1
+
+
+def test_get_edit_view_returns_item_data(dummy_request, add_models):
+    """When I send a get request to edit view, I get data to be edited."""
+    from expense_tracker.views.default import edit_view
+    dummy_request.matchdict["id"] = "4"
+    result = edit_view(dummy_request)
+    expense = dummy_request.dbsession.query(Expense).get(4)
+    assert result["data"]["item"] == expense.item
+
+
+def test_posting_to_edit_view_edits_existing_obj(dummy_request, add_models):
+    """When I post to the edit view I edit the object."""
+    from expense_tracker.views.default import edit_view
+
     query = dummy_request.dbsession.query(Expense)
-    import pdb; pdb.set_trace()
-    new_expense = query.filter(Expense.item == "test_item")
+
+    dummy_request.method = "POST"
+    dummy_request.matchdict["id"] = "4"
+    dummy_request.POST["item"] = "test item"
+    dummy_request.POST["amount"] = "1234.56"
+    dummy_request.POST["paid_to"] = "test recipient"
+    dummy_request.POST["category"] = "test category"
+    dummy_request.POST["description"] = "test description"
+    edit_view(dummy_request)
+
+    this_expense = query.get(4)
+    assert this_expense.item == "test item"
 
 # ======== FUNCTIONAL TESTS ===========
 
