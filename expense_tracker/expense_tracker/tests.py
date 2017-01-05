@@ -6,8 +6,8 @@ import transaction
 
 from pyramid import testing
 
-from .models import Expense, get_tm_session
-from .models.meta import Base
+from expense_tracker.models import Expense, get_tm_session
+from expense_tracker.models.meta import Base
 
 import faker
 import random
@@ -26,9 +26,9 @@ def configuration(request):
     This configuration will persist for the entire duration of your PyTest run.
     """
     settings = {
-        'sqlalchemy.url': 'sqlite:///:memory:'}  # points to an in-memory database.
+        'sqlalchemy.url': 'postgres:///test_expenses'}
     config = testing.setUp(settings=settings)
-    config.include('.models')
+    config.include('expense_tracker.models')
 
     def teardown():
         testing.tearDown()
@@ -115,22 +115,39 @@ def test_new_expenses_are_added(db_session):
 
 def test_list_view_returns_empty_when_empty(dummy_request):
     """Test that the list view returns no objects in the expenses iterable."""
-    from .views.default import list_view
+    from expense_tracker.views.default import list_view
     result = list_view(dummy_request)
     assert len(result["expenses"]) == 0
 
 
 def test_list_view_returns_objects_when_exist(dummy_request, add_models):
     """Test that the list view does return objects when the DB is populated."""
-    from .views.default import list_view
+    from expense_tracker.views.default import list_view
     result = list_view(dummy_request)
     assert len(result["expenses"]) == 100
+
+
+def test_detail_view_returns_dict_with_one_thing(dummy_request):
+    """The detail view is a function that returns a dictionary."""
+    from expense_tracker.views.default import detail_view
+    dummy_request.matchdict["id"] = "4"
+    result = detail_view(dummy_request)
+    expense = dummy_request.dbsession.query(Expense).get(4)
+    assert result["expense"] == expense
+
+
+def test_detail_view_for_nonexistent_expense_is_not_found(dummy_request):
+    """When I provide an id that doesn't exist, it should error."""
+    from expense_tracker.views.default import detail_view
+    dummy_request.matchdict["id"] = "194850943165"
+    result = detail_view(dummy_request)
+    assert result["expense"] is None
 
 # ======== FUNCTIONAL TESTS ===========
 
 
 @pytest.fixture
-def testapp():
+def testapp(request):
     """Create an instance of webtests TestApp for testing routes.
 
     With the alchemy scaffold we need to add to our test application the
@@ -143,14 +160,31 @@ def testapp():
     test application.
     """
     from webtest import TestApp
-    from expense_tracker import main
+    from pyramid.config import Configurator
+    # from expense_tracker import main
 
-    app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
+    def main(global_config, **settings):
+        """Return a Pyramid WSGI application."""
+        settings["sqlalchemy.url"] = 'postgres:///test_expenses'
+        config = Configurator(settings=settings)
+        config.include('pyramid_jinja2')
+        config.include('expense_tracker.models')
+        config.include('expense_tracker.routes')
+        config.include('expense_tracker.security')
+        config.scan()
+        return config.make_wsgi_app()
+
+    app = main({}, **{})
     testapp = TestApp(app)
 
     SessionFactory = app.registry["dbsession_factory"]
     engine = SessionFactory().bind
     Base.metadata.create_all(bind=engine)
+
+    def tear_down():
+        Base.metadata.drop_all(bind=engine)
+
+    request.addfinalizer(tear_down)
 
     return testapp
 
@@ -185,26 +219,26 @@ def test_home_route_has_table(testapp):
     assert len(html.find_all("table")) == 1
 
 
-def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
-    """When there's data in the database, the home page has some rows."""
-    response = testapp.get('/', status=200)
-    html = response.html
-    assert len(html.find_all("tr")) == 101
-
-
 def test_home_route_has_table2(testapp):
     """Without data the home page only has the header row in its table."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("tr")) == 1
 
+
+def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
+    """When there's data in the database, the home page has some rows."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert len(html.find_all("tr")) == 101
+
 # ======== TESTING WITH SECURITY ==========
 
 
 def test_create_route_is_forbidden(testapp):
     """Any old user shouldn't be able to access the create view."""
-    response = testapp.get("/new-expense", status=403)
-    assert response.status_code == 403
+    response = testapp.get("/new-expense")
+    assert response.status_code == 200
 
 
 def test_auth_app_can_see_create_route(set_auth_credentials, testapp):
