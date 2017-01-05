@@ -2,6 +2,7 @@
 
 from pyramid.view import view_config, forbidden_view_config
 from expense_tracker.models import Expense
+from pyramid.response import Response
 from pyramid.httpexceptions import HTTPFound
 import datetime
 from expense_tracker.security import check_credentials
@@ -42,6 +43,8 @@ def detail_view(request):
     """The detail page for an expense."""
     the_id = int(request.matchdict["id"])
     expense = request.dbsession.query(Expense).get(the_id)
+    if not expense:
+        return Response("Not Found", content_type='text/plain', status=404)
     return {"expense": expense}
 
 

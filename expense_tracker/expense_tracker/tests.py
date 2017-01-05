@@ -37,7 +37,7 @@ def configuration(request):
     return config
 
 
-@pytest.fixture()
+@pytest.fixture
 def db_session(configuration, request):
     """Create a session for interacting with the test database.
 
@@ -127,7 +127,7 @@ def test_list_view_returns_objects_when_exist(dummy_request, add_models):
     assert len(result["expenses"]) == 100
 
 
-def test_detail_view_returns_dict_with_one_thing(dummy_request):
+def test_detail_view_returns_dict_with_one_thing(dummy_request, add_models):
     """The detail view is a function that returns a dictionary."""
     from expense_tracker.views.default import detail_view
     dummy_request.matchdict["id"] = "4"
@@ -141,7 +141,29 @@ def test_detail_view_for_nonexistent_expense_is_not_found(dummy_request):
     from expense_tracker.views.default import detail_view
     dummy_request.matchdict["id"] = "194850943165"
     result = detail_view(dummy_request)
-    assert result["expense"] is None
+    assert result.status_code == 404
+
+
+def test_create_view_returns_empty_dict(dummy_request):
+    """When I send a simple get request to create view, I get emptiness."""
+    from expense_tracker.views.default import create_view
+    assert create_view(dummy_request) == {}
+
+
+def test_posting_to_create_view_adds_new_obj(dummy_request):
+    """When I post to the create view I get a new expense."""
+    from expense_tracker.views.default import create_view
+    dummy_request.method = "POST"
+    dummy_request.POST["item"] = "test item"
+    dummy_request.POST["amount"] = "1234.56"
+    dummy_request.POST["paid_to"] = "test recipient"
+    dummy_request.POST["category"] = "test category"
+    dummy_request.POST["description"] = "test description"
+    create_view(dummy_request)
+
+    query = dummy_request.dbsession.query(Expense)
+    import pdb; pdb.set_trace()
+    new_expense = query.filter(Expense.item == "test_item")
 
 # ======== FUNCTIONAL TESTS ===========
 
