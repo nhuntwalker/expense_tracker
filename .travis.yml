@@ -15,7 +15,7 @@ install:
   - pip install coveralls
 # command to run tests
 script: 
-  - py.test expense_tracker/expense_tracker/tests.py --cov=expense_tracker --cov-report term-missing
+  - py.test expense_tracker/expense_tracker/tests.py --cov=expense_tracker/expense_tracker --cov-report term-missing
 
 after_success:
   - coveralls
