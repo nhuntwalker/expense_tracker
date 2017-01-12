@@ -74,7 +74,17 @@ def add_models(dummy_request):
 
     Every test that includes this fixture will add new random expenses.
     """
-    dummy_request.dbsession.add_all(EXPENSES)
+    for i in range(100):
+        expense = Expense(
+            item=FAKE.company(),
+            amount=random.random() * random.randint(0, 1000),
+            paid_to=FAKE.name(),
+            category=random.choice(CATEGORIES),
+            date=datetime.datetime.now(),
+            description=FAKE.text(100),
+        )
+        dummy_request.dbsession.add(expense)
+    # dummy_request.dbsession.add_all(EXPENSES)
 
 # instantiate a Faker object for producing fake names, companies, and text.
 FAKE = faker.Faker()
