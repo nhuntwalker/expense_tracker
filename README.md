@@ -1,4 +1,7 @@
 # Expense Tracker
+
+[![Build Status](https://travis-ci.org/nhuntwalker/expense_tracker.svg?branch=master)](https://travis-ci.org/nhuntwalker/expense_tracker)
+
 A simple Pyramid app for listing and displaying expenses.
 
 **Authors**:
