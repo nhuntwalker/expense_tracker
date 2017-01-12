@@ -20,15 +20,16 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'faker',
-    'passlib'
-    ]
+    'passlib',
+    'psycopg2'
+]
 
 tests_require = [
     'WebTest >= 1.3.1',  # py3 compat
     'pytest',  # includes virtualenv
     'pytest-cov',
     'tox'
-    ]
+]
 
 setup(name='expense_tracker',
       version='0.0',
