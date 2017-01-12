@@ -11,7 +11,7 @@ before_script:
 
 # command to install dependencies
 install:
-  - pip install -e expense_tracker[testing] --use-mirrors
+  - pip install -e expense_tracker[testing]
 # command to run tests
 script: 
   - py.test expense_tracker/expense_tracker --cov expense_tracker/expense_tracker --cov-report term-missing
