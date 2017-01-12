@@ -3,6 +3,7 @@
 from pyramid.view import view_config, forbidden_view_config
 from expense_tracker.models import Expense
 from pyramid.httpexceptions import HTTPFound
+from pyramid.response import Response
 import datetime
 from expense_tracker.security import check_credentials
 from pyramid.security import remember, forget  # <--- add this line
@@ -41,7 +42,10 @@ def list_view(request):
 def detail_view(request):
     """The detail page for an expense."""
     the_id = int(request.matchdict["id"])
+
     expense = request.dbsession.query(Expense).get(the_id)
+    if not expense:
+        return Response("Not Found", content_type='text/plain', status=404)
     return {"expense": expense}
 
 
@@ -137,12 +141,6 @@ def logout_view(request):
     return HTTPFound(request.route_url("list"), headers=auth_head)
 
 
-@forbidden_view_config(renderer="../templates/forbidden.jinja2")
-def not_allowed_view(request):
-    """Some special stuff for the forbidden view."""
-    return {}
-
-
 @view_config(route_name="delete", permission="delete")
 def delete_view(request):
     """To delete individual items."""
@@ -156,3 +154,9 @@ def api_list_view(request):
     expenses = request.dbsession.query(Expense).all()
     output = [item.to_json() for item in expenses]
     return output
+
+
+@forbidden_view_config(renderer="../templates/forbidden.jinja2")
+def not_allowed_view(request):
+    """Some special stuff for the forbidden view."""
+    return {}

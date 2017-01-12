@@ -5,6 +5,7 @@
 {% block body %}
 <h1>Edit the Expense</h1>
 <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
     <p>
         <label for="item">Expense Name: </label>
         <input type="text" name="item" value="{{data.item}}"/>
