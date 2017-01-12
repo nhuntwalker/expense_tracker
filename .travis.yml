@@ -1,7 +1,7 @@
 language: python
 python:
   - "2.7"
-  - "3.5"
+  # - "3.5"
 
 services:
   - postgresql
@@ -12,9 +12,10 @@ before_script:
 # command to install dependencies
 install:
   - pip install -e expense_tracker[testing]
+  - pip install coveralls
 # command to run tests
 script: 
-  - py.test expense_tracker/expense_tracker --cov=expense_tracker/expense_tracker --cov-report term-missing
+  - py.test expense_tracker/expense_tracker/tests.py --cov=expense_tracker/expense_tracker --cov-report term-missing
 
 after_success:
   - coveralls
