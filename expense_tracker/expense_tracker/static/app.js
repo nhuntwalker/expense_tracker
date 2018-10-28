@@ -3,11 +3,11 @@ $(document).ready(function(){
     deleters.on("click", function(){
         // send ajax request to delete this expense
         $.ajax({
-            url: 'delete/' + $(this).attr("data"),
+            url: `expense/${$(this).attr("data")}/delete`,
             data: {
                 "item": "some name",
                 "paid_to": "some company"
-            }
+            },
             success: function(){
                 console.log("deleted");
             }

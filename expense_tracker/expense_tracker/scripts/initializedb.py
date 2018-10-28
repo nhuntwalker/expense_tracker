@@ -58,12 +58,13 @@ def main(argv=sys.argv):
         "therapist"
     ]
 
+
     expenses = [Expense(
         item=fake.company(),
         amount=random.random() * random.randint(0, 1000),
         paid_to=fake.name(),
         category=random.choice(categories),
-        date=fake.date_object(),
+        date=fake.date_time_between(start_date="-600d", end_date="now", tzinfo=None),
         description=fake.text(100),
     ) for i in range(100)]
 
