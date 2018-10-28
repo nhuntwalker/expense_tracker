@@ -5,34 +5,36 @@
 
 A simple Pyramid app for listing and displaying expenses.
 
-**Authors**:
+**Author**: Nicholas Hunt-Walker (nhuntwalker@gmail.com)
 
-- Nicholas Hunt-Walker (nhuntwalker@gmail.com)
-- the class of Code Fellows Python 401d5
-
-## Routes:
+## Routes
 
 - `/` - the home page and a listing of all expenses
-- `/new-expense` - to create a new expense
+- `/expense` - to create a new expense
 - `/expense/{id:\d+}` - the page for an individual expense
 - `/expense/{id:\d+}/edit` - for editing existing expenses
-- `/expense/{cat:\w+}` - list all expenses by category
+- `/expense/{id:\d+}/delete` - delete an existing expense
+- `/expense/{category:\w+}` - list all expenses by category
+- `/api/v1/expense` - JSON list of all existing expenses
+- `/login` - log the user in
+- `/logout` - log the user out
 
-## Set Up and Installation:
+## Set Up and Installation
 
-- Clone this repository to your local machine.
-
+- Clone this repository to your machine.
 - Once downloaded, `cd` into the `expense_tracker` directory.
-
 - Begin a new virtual environment with Python 3 and activate it.
+- `cd` into the next `expense_tracker` directory. You should land at the same level of `setup.py`
+- `pip install -e .[testing]` this package as well as the set of extras into your environment.
 
-- `cd` into the next `expense_tracker` directory. It should be at the same level of `setup.py`
-
-- `pip install` this package as well as the `testing` set of extras into your virtual environment.
+### In Development
 
 - `$ initialize_db development.ini` to initialize the database, populating with random models.
-
 - `$ pserve development.ini --reload` to serve the application on `http://localhost:6543`
+
+### In Production
+
+- TBD
 
 ## To Test
 
